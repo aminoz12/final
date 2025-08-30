@@ -9,7 +9,7 @@ export default defineConfig({
   adapter: node({
     mode: 'standalone'
   }),
-  site: 'https://admin.mad2moi.store',
+  site: 'https://danialblogs-3.onrender.com',
   base: '/',
 
   server: {
