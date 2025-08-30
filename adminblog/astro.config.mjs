@@ -9,31 +9,42 @@ export default defineConfig({
   adapter: node({
     mode: 'standalone'
   }),
-  site: 'https://final-2-xuct.onrender.com',
+  site: 'https://mad2moi.store', // ✅ your main domain
   base: '/',
 
   server: {
     port: 4322,
-    host: true
+    host: true,
+    // ✅ allow custom domains in production
+    allowedHosts: [
+      'mad2moi.store',
+      'www.mad2moi.store',
+      'admin.mad2moi.store',
+      'danialblogs-3.onrender.com',
+      'localhost',
+      '127.0.0.1'
+    ]
   },
+
   vite: {
     server: {
       allowedHosts: [
-        'danialblogs-3.onrender.com', 
-        'fr.mad2moi.store', 
+        'mad2moi.store',
+        'www.mad2moi.store',
         'admin.mad2moi.store',
-        '.onrender.com', // Allows all onrender.com subdomains
+        'danialblogs-3.onrender.com',
         'localhost',
         '127.0.0.1',
-        'a909b7338311.ngrok-free.app', // Allow ngrok host
-        '.ngrok-free.app', // Allow all ngrok-free.app subdomains
-        'admin.loca.lt', // Allow loca.lt host
-        'blog.loca.lt', // Allow blog.loca.lt host
-        '.loca.lt', // Allow all loca.lt subdomains
-        '.nip.io', // Allow nip.io hosts
-        '.xip.io', // Allow xip.io hosts
-        '.localhost.run', // Allow localhost.run hosts
-        '.serveo.net' // Allow serveo.net hosts
+        '.onrender.com', // Allows all onrender.com subdomains
+        'a909b7338311.ngrok-free.app', 
+        '.ngrok-free.app',
+        'admin.loca.lt',
+        'blog.loca.lt',
+        '.loca.lt',
+        '.nip.io',
+        '.xip.io',
+        '.localhost.run',
+        '.serveo.net'
       ],
       proxy: {
         '/ws/chat': {
@@ -42,7 +53,6 @@ export default defineConfig({
         }
       }
     },
-    // Ensure static files are served correctly
     publicDir: 'public',
     build: {
       rollupOptions: {
