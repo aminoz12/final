@@ -19,7 +19,7 @@ export default defineConfig({
   vite: {
     server: {
       allowedHosts: [
-        'danialblogs-3.onrender.com',
+        'danialblogs-3.onrender.com', 'fr.mad2moi.store' , 'admin.mad2moi.store'
         '.onrender.com', // Allows all onrender.com subdomains
         'localhost',
         '127.0.0.1',
