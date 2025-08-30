@@ -9,7 +9,7 @@ export default defineConfig({
   adapter: node({
     mode: 'standalone'
   }),
-  site: 'https://final-2-xuct.onrender.com',
+  site: 'https://admin.mad2moi.store',
   base: '/',
 
   server: {
