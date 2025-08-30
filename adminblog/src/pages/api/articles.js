@@ -1,4 +1,4 @@
-import { initializeDatabase, executeQuery } from '../../utils/database.js';
+import { initializeDatabaseFactory, executeQueryFactory, closeDatabaseFactory } from '../../utils/databaseFactory.js';
 import BlogSyncService from '../../services/blogSyncService.js';
 import { processFeaturedImage, isValidImageUrl, sanitizeImageUrl } from '../../utils/imageHandler.js';
 import path from 'path';
@@ -6,8 +6,8 @@ import path from 'path';
 // GET - Get all articles (excluding deleted ones by default)
 export async function GET({ request }) {
   try {
-    // Initialize database connection
-    await initializeDatabase();
+    // Initialize database connection (auto-switches between SQLite/MongoDB)
+    await initializeDatabaseFactory();
     
     const url = new URL(request.url);
     const includeDeleted = url.searchParams.get('includeDeleted') === 'true';
@@ -36,7 +36,7 @@ export async function GET({ request }) {
     query += ` ORDER BY a.created_at DESC`;
     
     const queryParams = status ? [status] : [];
-    const articles = await executeQuery(query, queryParams);
+    const articles = await executeQueryFactory(query, queryParams);
     
     return new Response(JSON.stringify(articles), {
       status: 200,
