@@ -1,0 +1,379 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getArticleBySlug, incrementViewCount, initializeDatabase } from '../../utils/database.js';
+import Breadcrumbs from '../../components/blog/Breadcrumbs.astro';
+import CategoryBadge from '../../components/CategoryBadge.astro';
+import VisitorCounter from '../../components/blog/VisitorCounter.astro';
+import SocialShare from '../../components/blog/SocialShare.astro';
+import CommentSection from '../../components/blog/CommentSection.astro';
+import CallToAction from '../../components/blog/CallToAction.astro';
+import EngagementStats from '../../components/blog/EngagementStats.astro';
+
+// Get the slug from the URL
+const { slug } = Astro.params;
+
+// Get article data dynamically
+let article = null;
+  try {
+    await initializeDatabase();
+  article = await getArticleBySlug(slug);
+  
+  if (!article) {
+    console.error('❌ Article not found for slug:', slug);
+    return Astro.redirect('/404');
+  }
+  
+  console.log('🔍 Debug: Article loaded for slug:', slug, article);
+  console.log('🔍 Debug: Article content length:', article?.content?.length || 0);
+  console.log('🔍 Debug: Article featured_image:', article?.featured_image);
+  console.log('🔍 Debug: Article status:', article?.status);
+} catch (error) {
+  console.error('❌ Error loading article:', error);
+  return Astro.redirect('/404');
+}
+
+// Increment view count
+if (article?.id) {
+  try {
+    await incrementViewCount(article.id);
+  } catch (error) {
+    console.error('❌ Error incrementing view count:', error);
+  }
+}
+
+// Parse tags
+const tags = article?.tags ? (typeof article.tags === 'string' ? JSON.parse(article.tags) : article.tags) : [];
+
+// Parse featured image
+const featuredImage = article?.featured_image ? 
+  (typeof article.featured_image === 'string' ? JSON.parse(article.featured_image) : article.featured_image) : 
+  null;
+
+// Format dates
+const publishedDate = article?.published_at ? new Date(article.published_at) : new Date(article?.created_at);
+const formattedDate = publishedDate.toLocaleDateString('fr-FR', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+});
+
+// Set page title and meta
+const pageTitle = article?.meta_title || article?.title || 'Article';
+const pageDescription = article?.meta_description || article?.excerpt || 'Découvrez cet article sur Mad2Moi';
+---
+
+<Layout title={pageTitle} description={pageDescription}>
+  <div class="min-h-screen bg-gradient-to-br from-primary-900 via-secondary-900 to-primary-800">
+    <!-- Hero Section -->
+    <div class="relative overflow-hidden">
+      <!-- Background Image -->
+      {featuredImage && (
+        <div class="absolute inset-0 z-0">
+          <img 
+            src={featuredImage.url} 
+            alt={article.title}
+            class="w-full h-full object-cover opacity-20"
+          />
+          <div class="absolute inset-0 bg-gradient-to-b from-transparent via-secondary-900/50 to-secondary-900"></div>
+        </div>
+      )}
+      
+      <!-- Content -->
+      <div class="relative z-10 container mx-auto px-4 py-16">
+        <div class="max-w-4xl mx-auto text-center">
+          <!-- Category Badge -->
+          {article?.category_name && (
+            <CategoryBadge 
+              name={article.category_name} 
+              color={article.category_color} 
+              size="lg" 
+              className="mb-6"
+            />
+          )}
+          
+          <!-- Title -->
+          <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+            {article?.title}
+          </h1>
+          
+          <!-- Excerpt -->
+          {article?.excerpt && (
+            <p class="text-xl text-secondary-300 mb-8 max-w-3xl mx-auto leading-relaxed">
+              {article.excerpt}
+            </p>
+          )}
+          
+          <!-- Meta Information -->
+          <div class="flex flex-wrap items-center justify-center gap-6 text-secondary-400 text-sm">
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+              </svg>
+              <span>{article?.author_name || 'Mad2Moi Team'}</span>
+            </div>
+            
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+              </svg>
+              <span>{formattedDate}</span>
+            </div>
+            
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+              </svg>
+              <span>{article?.view_count || 0} vues</span>
+            </div>
+
+            <!-- Reading Time -->
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+              </svg>
+              <span>{Math.ceil((article?.content?.length || 0) / 200)} min de lecture</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Breadcrumbs -->
+    <div class="container mx-auto px-4 -mt-8 mb-8">
+      <Breadcrumbs 
+        items={[
+          { label: 'Accueil', href: '/' },
+          { label: 'Blog', href: '/blog' },
+          { label: article?.category_name || 'Article', href: `/blog?category=${article?.category_slug || ''}` },
+          { label: article?.title || 'Article', href: '#' }
+        ]}
+      />
+    </div>
+
+    <!-- Article Content -->
+    <div class="container mx-auto px-4 pb-16">
+      <div class="max-w-4xl mx-auto">
+        <article class="article-content max-w-none">
+          <!-- Featured Image -->
+          {featuredImage && featuredImage.url ? (
+            <div class="mb-12 rounded-2xl overflow-hidden shadow-2xl">
+              <img 
+                src={featuredImage.url} 
+                alt={article?.title}
+                class="w-full h-auto"
+              />
+            </div>
+          ) : (
+            <div class="mb-12 p-12 bg-gradient-to-br from-secondary-800/40 to-secondary-900/40 rounded-2xl border border-secondary-700/50 text-center backdrop-blur-sm">
+              <div class="w-24 h-24 mx-auto mb-4 bg-secondary-700/50 rounded-full flex items-center justify-center">
+                <svg class="w-12 h-12 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+              </div>
+              <p class="text-secondary-300 text-lg font-medium">Aucune image disponible</p>
+            </div>
+          )}
+          
+
+          
+          <!-- Article Content -->
+          {article?.content ? (
+            <div class="article-text" style="font-family: 'Inter', sans-serif; color: #D1D5DB; line-height: 1.8" set:html={article.content} />
+            <!-- Debug: Content length: {article.content.length} characters -->
+          ) : (
+            <div class="text-center py-12">
+              <div class="w-20 h-20 mx-auto mb-6 bg-secondary-800/50 rounded-full flex items-center justify-center">
+                <svg class="w-10 h-10 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+              </div>
+              <p class="text-secondary-300 text-xl font-medium mb-2">Aucun contenu disponible</p>
+              <p class="text-secondary-500">Article ID: {article?.id}, Status: {article?.status}</p>
+            </div>
+          )}
+          
+          <!-- Tags -->
+          {tags && tags.length > 0 && (
+            <div class="mt-8 pt-8 border-t border-secondary-700">
+              <h3 class="text-lg font-semibold text-white mb-4">Tags</h3>
+              <div class="flex flex-wrap gap-2">
+                {tags.map(tag => (
+                  <span class="px-3 py-1 bg-primary-900/30 border border-primary-700/50 rounded-full text-sm text-primary-400">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </article>
+        
+        <!-- Engagement Stats -->
+        <div class="mt-12">
+          <EngagementStats 
+            views={article?.view_count || 0}
+            likes={0}
+            shares={0}
+          />
+        </div>
+        
+        <!-- Social Share -->
+        <div class="mt-8">
+          <SocialShare 
+            title={article?.title}
+            url={Astro.url.href}
+            description={article?.excerpt}
+          />
+        </div>
+        
+        <!-- Call to Action -->
+        <div class="mt-12">
+          <CallToAction />
+        </div>
+        
+        <!-- Comments Section -->
+        <div class="mt-12">
+          <CommentSection articleId={article?.id} />
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  /* Modern Article Styling */
+  .article-content {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.75;
+    color: #E5E7EB;
+  }
+
+  .article-text {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #D1D5DB;
+    line-height: 1.8;
+    font-size: 1.125rem;
+    background: linear-gradient(135deg, rgba(31, 41, 55, 0.3) 0%, rgba(55, 65, 81, 0.1) 100%);
+    padding: 2rem;
+    border-radius: 1.5rem;
+    border: 1px solid rgba(75, 85, 99, 0.3);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .article-text::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #3B82F6 0%, #8B5CF6 50%, #EC4899 100%);
+    border-radius: 1.5rem 1.5rem 0 0;
+  }
+
+  .article-text > * {
+    margin-bottom: 1.5rem;
+  }
+
+  .article-text p {
+    font-size: 1.125rem;
+    line-height: 1.85;
+    margin-bottom: 1.75rem;
+    color: #E5E7EB;
+    text-align: justify;
+    font-weight: 400;
+  }
+
+  .article-text p:first-of-type {
+    font-size: 1.25rem;
+    line-height: 1.8;
+    color: #F3F4F6;
+    font-weight: 500;
+    margin-bottom: 2.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+    border-radius: 0.75rem;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+  }
+
+  .article-text h1, .article-text h2, .article-text h3, 
+  .article-text h4, .article-text h5, .article-text h6 {
+    font-weight: 700;
+    line-height: 1.3;
+    margin-top: 3rem;
+    margin-bottom: 1.5rem;
+    color: #FFFFFF;
+    letter-spacing: -0.025em;
+  }
+
+  .article-text h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    text-align: center;
+    margin-top: 3rem;
+    margin-bottom: 2rem;
+  }
+
+  .article-text h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #F3F4F6;
+    border-bottom: 2px solid #3B82F6;
+    padding-bottom: 0.75rem;
+  }
+
+  .article-text h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #F9FAFB;
+    padding-left: 1rem;
+    border-left: 3px solid #8B5CF6;
+    background: rgba(139, 92, 246, 0.1);
+    padding: 0.75rem 1rem;
+    border-radius: 0 0.5rem 0.5rem 0;
+  }
+
+  .article-text ul, .article-text ol {
+    margin: 1.5rem 0;
+    padding: 1.5rem 2rem;
+    background: rgba(31, 41, 55, 0.3);
+    border-radius: 0.75rem;
+    border: 1px solid rgba(75, 85, 99, 0.3);
+  }
+
+  .article-text li {
+    font-size: 1.125rem;
+    line-height: 1.7;
+    margin-bottom: 0.75rem;
+    color: #D1D5DB;
+  }
+
+  .article-text a {
+    color: #60A5FA;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+    background: rgba(96, 165, 250, 0.1);
+  }
+
+  .article-text a:hover {
+    color: #93C5FD;
+    background: rgba(96, 165, 250, 0.2);
+  }
+
+  @media (max-width: 768px) {
+    .article-text {
+      padding: 1.5rem;
+    }
+    .article-text h1 { font-size: 2rem; }
+    .article-text h2 { font-size: 1.75rem; }
+    .article-text h3 { font-size: 1.375rem; }
+    .article-text p { font-size: 1rem; }
+  }
+</style>
+
+

@@ -1,0 +1,535 @@
+---
+// LiveChat component for blog visitors
+---
+
+<div id="liveChatWidget" class="fixed bottom-4 right-4 z-50">
+  <!-- Chat Toggle Button -->
+  <button id="chatToggleBtn" class="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg transition-all duration-300 hover:scale-110">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+    </svg>
+  </button>
+
+  <!-- Chat Window -->
+  <div id="chatWindow" class="hidden absolute bottom-16 right-0 w-80 h-96 bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col">
+    <!-- Chat Header -->
+    <div class="bg-blue-600 text-white p-4 rounded-t-lg">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          <h3 class="font-semibold">Support en ligne</h3>
+        </div>
+        <button id="closeChatBtn" class="text-white hover:text-gray-200 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <p class="text-sm text-blue-100 mt-1">Comment pouvons-nous vous aider ?</p>
+    </div>
+
+    <!-- Messages Container -->
+    <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3">
+      <!-- Welcome message -->
+      <div class="flex justify-start">
+        <div class="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 rounded-lg max-w-xs">
+          <div class="text-xs text-gray-500 dark:text-gray-400 mb-1">Support • À l'instant</div>
+          <div>Bonjour ! 👋 Je suis là pour vous aider. Comment puis-je vous assister aujourd'hui ?</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Typing Indicator -->
+    <div id="typingIndicator" class="hidden px-4 pb-2">
+      <div class="flex items-center space-x-2 text-gray-500 dark:text-gray-400 text-sm">
+        <div class="flex space-x-1">
+          <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+          <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+          <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+        </div>
+        <span>L'équipe tape...</span>
+      </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+      <!-- Emoji Picker -->
+      <div id="emojiPicker" class="hidden mb-2 p-2 bg-gray-50 dark:bg-gray-700 rounded border">
+        <div class="grid grid-cols-8 gap-1">
+          <button class="emoji-btn p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-lg" data-emoji="😊">😊</button>
+          <button class="emoji-btn p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-lg" data-emoji="👍">👍</button>
+          <button class="emoji-btn p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-lg" data-emoji="❤️">❤️</button>
+          <button class="emoji-btn p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-lg" data-emoji="🎉">🎉</button>
+          <button class="emoji-btn p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-lg" data-emoji="🔥">🔥</button>
+          <button class="emoji-btn p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-lg" data-emoji="✨">✨</button>
+          <button class="emoji-btn p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-lg" data-emoji="🚀">🚀</button>
+          <button class="emoji-btn p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded text-lg" data-emoji="💯">💯</button>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <!-- Emoji Button -->
+        <button id="emojiToggleBtn" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+          😊
+        </button>
+        
+        <!-- Attachment Button -->
+        <button id="attachmentBtn" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Pièce jointe">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828a2 2 0 002.828-2.828l-6.586-6.586a2 2 0 00-2.828 2.828L15.172 7z"></path>
+          </svg>
+        </button>
+        
+        <!-- Image Button -->
+        <button id="imageBtn" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Image">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+        </button>
+        
+        <!-- Message Input -->
+        <div class="flex-1">
+          <input type="text" id="chatInput" placeholder="Tapez votre message..." class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+        </div>
+        
+        <!-- Send Button -->
+        <button id="sendChatBtn" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+          </svg>
+        </button>
+      </div>
+      
+      <!-- File Input (hidden) -->
+      <input type="file" id="fileInput" class="hidden" accept="image/*,.pdf,.doc,.docx,.txt">
+    </div>
+  </div>
+</div>
+
+<script>
+// Live Chat System for Blog Visitors
+class LiveChatSystem {
+  constructor() {
+    this.ws = null;
+    this.isConnected = false;
+    this.sessionId = this.generateSessionId();
+    this.userName = this.getUserName();
+    this.userEmail = this.getUserEmail();
+    this.currentAttachment = null;
+    this.conversationId = null; // Add conversation ID storage
+    
+    this.initializeElements();
+    this.initializeWebSocket();
+    this.setupEventListeners();
+    this.loadChatHistory();
+    this.startConversation(); // Start conversation when chat is initialized
+  }
+
+  initializeElements() {
+    this.chatToggleBtn = document.getElementById('chatToggleBtn');
+    this.chatWindow = document.getElementById('chatWindow');
+    this.closeChatBtn = document.getElementById('closeChatBtn');
+    this.chatMessages = document.getElementById('chatMessages');
+    this.chatInput = document.getElementById('chatInput');
+    this.sendChatBtn = document.getElementById('sendChatBtn');
+    this.typingIndicator = document.getElementById('typingIndicator');
+    this.emojiToggleBtn = document.getElementById('emojiToggleBtn');
+    this.emojiPicker = document.getElementById('emojiPicker');
+    this.attachmentBtn = document.getElementById('attachmentBtn');
+    this.imageBtn = document.getElementById('imageBtn');
+    this.fileInput = document.getElementById('fileInput');
+  }
+
+  generateSessionId() {
+    return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  }
+
+  getUserName() {
+    // Try to get name from localStorage or generate anonymous name
+    return localStorage.getItem('chatUserName') || `Visiteur_${Math.floor(Math.random() * 1000)}`;
+  }
+
+  getUserEmail() {
+    // Try to get email from localStorage
+    return localStorage.getItem('chatUserEmail') || null;
+  }
+
+  async initializeWebSocket() {
+    try {
+      if (!window.WebSocket) {
+        throw new Error('WebSocket not supported');
+      }
+
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws/chat`;
+      
+      this.ws = new WebSocket(wsUrl);
+      
+      this.ws.onopen = () => {
+        console.log('✅ Chat WebSocket connected');
+        this.isConnected = true;
+        this.registerClient();
+      };
+
+      this.ws.onmessage = (event) => {
+        this.handleWebSocketMessage(JSON.parse(event.data));
+      };
+
+      this.ws.onclose = () => {
+        console.log('🔌 Chat WebSocket disconnected');
+        this.isConnected = false;
+        
+        // Try to reconnect after 5 seconds
+        setTimeout(() => {
+          if (!this.isConnected) {
+            this.initializeWebSocket();
+          }
+        }, 5000);
+      };
+
+      this.ws.onerror = (error) => {
+        console.error('❌ Chat WebSocket error:', error);
+      };
+
+    } catch (error) {
+      console.error('❌ Failed to initialize chat WebSocket:', error);
+    }
+  }
+
+  registerClient() {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({
+        type: 'register_client',
+        data: {
+          sessionId: this.sessionId,
+          userId: this.sessionId, // Use sessionId as userId for now
+          name: this.userName,
+          conversationId: this.conversationId
+        }
+      }));
+    }
+  }
+
+  handleWebSocketMessage(message) {
+    console.log('📨 Chat message received:', message);
+    
+    switch (message.type) {
+      case 'connection_established':
+        console.log('✅ Chat connection established');
+        break;
+        
+      case 'client_registered':
+        console.log('👤 Client registered successfully');
+        break;
+        
+      case 'new_message':
+        // Only show messages for current conversation
+        if (message.data.conversation_id === this.conversationId) {
+          this.addMessageToUI(message.data);
+        }
+        break;
+        
+      case 'admin_availability_changed':
+        this.updateAdminAvailability(message.available);
+        break;
+        
+      default:
+        console.warn('⚠️ Unknown chat message type:', message.type);
+    }
+  }
+
+  async loadChatHistory() {
+    try {
+      // For now, we'll just show the welcome message
+      // In a real implementation, you'd load chat history from the server
+      console.log('📚 Chat history loaded');
+    } catch (error) {
+      console.error('❌ Error loading chat history:', error);
+    }
+  }
+
+  async startConversation() {
+    try {
+      console.log('🚀 Starting new chat conversation...');
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'start_conversation',
+          session_id: this.sessionId,
+          visitor_name: this.userName,
+          visitor_email: this.userEmail
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to start conversation: ${response.status}`);
+      }
+
+      const result = await response.json();
+      this.conversationId = result.conversation_id;
+      console.log('✅ Conversation started with ID:', this.conversationId);
+
+      // Load messages for this conversation
+      await this.loadConversationMessages();
+
+    } catch (error) {
+      console.error('❌ Error starting conversation:', error);
+      this.showNotification('Erreur lors du démarrage du chat', 'error');
+    }
+  }
+
+  async loadConversationMessages() {
+    if (!this.conversationId) return;
+
+    try {
+      const response = await fetch(`/api/chat?action=messages&conversation_id=${this.conversationId}`);
+      if (response.ok) {
+        const messages = await response.json();
+        // Clear existing messages and load conversation messages
+        this.chatMessages.innerHTML = '';
+        messages.forEach(msg => {
+          this.addMessageToUI({
+            id: msg.id,
+            message: msg.message,
+            sender: msg.sender_type === 'visitor' ? 'user' : msg.sender_type,
+            timestamp: msg.created_at,
+            attachment: null
+          });
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error loading conversation messages:', error);
+    }
+  }
+
+  async sendMessage() {
+    const message = this.chatInput.value.trim();
+    if (!message) return;
+    
+    this.chatInput.value = '';
+    
+    try {
+      // Check if we have a conversation ID, if not start one
+      if (!this.conversationId) {
+        await this.startConversation();
+        if (!this.conversationId) {
+          throw new Error('Failed to start conversation');
+        }
+      }
+
+      // Add message to UI immediately
+      this.addMessageToUI({
+        id: Date.now(),
+        message: message,
+        sender: 'user',
+        timestamp: new Date().toISOString(),
+        attachment: this.currentAttachment
+      });
+
+      // Send via WebSocket if connected
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({
+          type: 'send_message',
+          data: {
+            userId: this.sessionId,
+            message: message,
+            sessionId: this.sessionId,
+            conversationId: this.conversationId,
+            attachment: this.currentAttachment
+          }
+        }));
+      } else {
+        // Fallback to HTTP API
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'send_message',
+            conversation_id: this.conversationId,
+            message: message,
+            sender_type: 'visitor',
+            attachment: this.currentAttachment
+          })
+        });
+        
+        if (!response.ok) throw new Error('Failed to send message');
+      }
+
+      // Clear attachment
+      this.currentAttachment = null;
+      
+    } catch (error) {
+      console.error('❌ Error sending message:', error);
+      this.showNotification('Erreur lors de l\'envoi du message', 'error');
+    }
+  }
+
+  addMessageToUI(message) {
+    const isUser = message.sender === 'user';
+    const messageHtml = `
+      <div class="flex ${isUser ? 'justify-end' : 'justify-start'}">
+        <div class="bg-${isUser ? 'blue-500 text-white' : 'gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'} px-3 py-2 rounded-lg max-w-xs">
+          <div class="text-xs opacity-75 mb-1">${isUser ? 'Vous' : message.sender === 'admin' ? 'Support' : 'GPT-5'} • ${this.formatTimestamp(message.timestamp)}</div>
+          <div>${this.escapeHtml(message.message)}</div>
+          ${message.attachment ? this.renderAttachment(message.attachment) : ''}
+        </div>
+      </div>
+    `;
+    
+    this.chatMessages.insertAdjacentHTML('beforeend', messageHtml);
+    this.scrollToBottom();
+  }
+
+  renderAttachment(attachment) {
+    if (attachment.type && attachment.type.startsWith('image/')) {
+      return `<img src="${attachment.url}" alt="Image" class="mt-2 max-w-full rounded">`;
+    }
+    return `<div class="mt-2 text-sm opacity-75">📎 Pièce jointe</div>`;
+  }
+
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  scrollToBottom() {
+    this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+  }
+
+  formatTimestamp(timestamp) {
+    if (!timestamp) return '';
+    
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = (now - date) / (1000 * 60 * 60);
+    
+    if (diffInHours < 1) {
+      return 'À l\'instant';
+    } else if (diffInHours < 24) {
+      return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    } else {
+      return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+    }
+  }
+
+  updateAdminAvailability(available) {
+    const statusIndicator = document.querySelector('.w-2.h-2.bg-green-400');
+    if (statusIndicator) {
+      statusIndicator.className = `w-2 h-2 ${available ? 'bg-green-400' : 'bg-gray-400'} rounded-full ${available ? 'animate-pulse' : ''}`;
+    }
+    
+    const statusText = document.querySelector('.bg-blue-600 h3 + p');
+    if (statusText) {
+      statusText.textContent = available ? 
+        'Comment pouvons-nous vous aider ?' : 
+        'Support temporairement indisponible';
+    }
+  }
+
+  showNotification(message, type = 'info') {
+    // Simple notification - you could enhance this with a toast system
+    console.log(`${type.toUpperCase()}: ${message}`);
+  }
+
+  setupEventListeners() {
+    // Toggle chat window
+    this.chatToggleBtn.addEventListener('click', () => {
+      this.chatWindow.classList.toggle('hidden');
+      if (!this.chatWindow.classList.contains('hidden')) {
+        this.chatInput.focus();
+      }
+    });
+
+    this.closeChatBtn.addEventListener('click', () => {
+      this.chatWindow.classList.add('hidden');
+    });
+
+    // Send message
+    this.sendChatBtn.addEventListener('click', () => this.sendMessage());
+    this.chatInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        this.sendMessage();
+      }
+    });
+
+    // Emoji picker
+    this.emojiToggleBtn.addEventListener('click', () => {
+      this.emojiPicker.classList.toggle('hidden');
+    });
+
+    this.emojiPicker.addEventListener('click', (e) => {
+      if (e.target.classList.contains('emoji-btn')) {
+        const emoji = e.target.dataset.emoji;
+        this.chatInput.value += emoji;
+        this.emojiPicker.classList.add('hidden');
+        this.chatInput.focus();
+      }
+    });
+
+    // File attachments
+    this.attachmentBtn.addEventListener('click', () => {
+      this.fileInput.accept = '.pdf,.doc,.docx,.txt';
+      this.fileInput.click();
+    });
+
+    this.imageBtn.addEventListener('click', () => {
+      this.fileInput.accept = 'image/*';
+      this.fileInput.click();
+    });
+
+    this.fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        this.handleFileUpload(file);
+      }
+    });
+
+    // Close emoji picker when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!this.emojiPicker.contains(e.target) && !this.emojiToggleBtn.contains(e.target)) {
+        this.emojiPicker.classList.add('hidden');
+      }
+    });
+  }
+
+  async handleFileUpload(file) {
+    try {
+      // For now, we'll just show a preview
+      // In a real implementation, you'd upload the file to your server
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          this.currentAttachment = {
+            name: file.name,
+            type: file.type,
+            url: e.target.result,
+            size: file.size
+          };
+          
+          this.showNotification(`Image "${file.name}" prête à être envoyée`, 'info');
+        };
+        reader.readAsDataURL(file);
+      } else {
+        this.currentAttachment = {
+          name: file.name,
+          type: file.type,
+          size: file.size
+        };
+        
+        this.showNotification(`Fichier "${file.name}" prêt à être envoyé`, 'info');
+      }
+    } catch (error) {
+      console.error('❌ Error handling file upload:', error);
+      this.showNotification('Erreur lors du traitement du fichier', 'error');
+    }
+  }
+}
+
+// Initialize the live chat system when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+  new LiveChatSystem();
+});
+</script>

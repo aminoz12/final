@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat API Test</title>
+</head>
+<body>
+    <h1>Chat API Test</h1>
+    
+    <div>
+        <h2>Test Chat API</h2>
+        <button onclick="testStartConversation()">Start Conversation</button>
+        <button onclick="testSendMessage()">Send Message</button>
+        <button onclick="testChatStream()">Test Chat Stream</button>
+    </div>
+    
+    <div id="results" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc;">
+        <h3>Results:</h3>
+        <div id="output"></div>
+    </div>
+
+    <script>
+        let conversationId = null;
+        let sessionId = 'test_' + Date.now();
+
+        function log(message) {
+            const output = document.getElementById('output');
+            output.innerHTML += '<div>' + new Date().toLocaleTimeString() + ': ' + message + '</div>';
+        }
+
+        async function testStartConversation() {
+            try {
+                log('🚀 Testing start conversation...');
+                
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'start_conversation',
+                        session_id: sessionId,
+                        visitor_name: 'Test User',
+                        visitor_email: 'test@example.com'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    conversationId = data.conversation_id;
+                    log('✅ Conversation started: ' + conversationId);
+                } else {
+                    const error = await response.text();
+                    log('❌ Failed to start conversation: ' + response.status + ' - ' + error);
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+            }
+        }
+
+        async function testSendMessage() {
+            if (!conversationId) {
+                log('⚠️ No conversation ID. Start conversation first.');
+                return;
+            }
+
+            try {
+                log('📤 Testing send message...');
+                
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'send_message',
+                        conversation_id: conversationId,
+                        message: 'Hello from test!',
+                        sender_type: 'visitor'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('✅ Message sent: ' + JSON.stringify(data));
+                } else {
+                    const error = await response.text();
+                    log('❌ Failed to send message: ' + response.status + ' - ' + error);
+                }
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+            }
+        }
+
+        function testChatStream() {
+            if (!sessionId) {
+                log('⚠️ No session ID. Start conversation first.');
+                return;
+            }
+
+            try {
+                log('🔌 Testing chat stream...');
+                
+                const url = `/api/chat-stream?session_id=${sessionId}`;
+                log('Connecting to: ' + url);
+                
+                const eventSource = new EventSource(url);
+                
+                eventSource.onopen = () => {
+                    log('✅ Chat stream connected');
+                };
+                
+                eventSource.onmessage = (event) => {
+                    log('📨 Received: ' + event.data);
+                };
+                
+                eventSource.onerror = (error) => {
+                    log('❌ Chat stream error: ' + error);
+                    eventSource.close();
+                };
+                
+                // Close after 10 seconds
+                setTimeout(() => {
+                    eventSource.close();
+                    log('🔌 Chat stream closed after 10 seconds');
+                }, 10000);
+                
+            } catch (error) {
+                log('❌ Error: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>

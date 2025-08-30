@@ -1,0 +1,1028 @@
+// Article management functionality with database API
+
+let articles = [];
+let filteredArticles = [];
+let categoriesCache = [];
+
+// Load articles from database API
+async function loadArticles() {
+  try {
+    console.log('🔄 Loading articles from API...');
+    const response = await fetch('/api/articles');
+    console.log('📡 API Response status:', response.status);
+    
+    if (response.ok) {
+      const data = await response.json();
+      console.log('📦 Raw API response:', data);
+      
+      // Ensure we have an array of articles
+      if (Array.isArray(data)) {
+        articles = data;
+      } else if (data && Array.isArray(data.articles)) {
+        articles = data.articles;
+      } else {
+        console.warn('⚠️ Unexpected API response format:', data);
+        articles = [];
+      }
+      
+      filteredArticles = [...articles];
+      console.log('✅ Articles loaded from database:', articles.length);
+      console.log('📋 Sample article:', articles[0]);
+      
+      renderArticles();
+      updateStats();
+    } else {
+      const errorText = await response.text();
+      console.error('❌ API Error Response:', errorText);
+      throw new Error(`Failed to fetch articles: ${response.status} ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error('❌ Error loading articles:', error);
+    articles = [];
+    filteredArticles = [];
+    showNotification('Erreur lors du chargement des articles.', 'error');
+  }
+}
+
+// Create new article
+async function createArticle(articleData) {
+  try {
+    const response = await fetch('/api/articles', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(articleData)
+    });
+    
+    if (response.ok) {
+      const newArticle = await response.json();
+      articles.unshift(newArticle);
+      filteredArticles = [...articles];
+      renderArticles();
+      updateStats();
+      showNotification(`Article "${newArticle.title}" créé avec succès !`, 'success');
+      return newArticle;
+    } else {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to create article');
+    }
+  } catch (error) {
+    console.error('❌ Error creating article:', error);
+    showNotification('Erreur lors de la création de l\'article.', 'error');
+    throw error;
+  }
+}
+
+// Update existing article
+async function updateArticle(id, articleData) {
+  try {
+    console.log('🔄 Updating article with ID:', id);
+    console.log('📤 Update payload:', articleData);
+    
+    const response = await fetch('/api/articles', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ id, ...articleData })
+    });
+    
+    console.log('📡 Update response status:', response.status);
+    
+    if (response.ok) {
+      const updatedArticle = await response.json();
+      console.log('✅ Update response:', updatedArticle);
+      
+      const index = articles.findIndex(a => a.id === id);
+      if (index !== -1) {
+        articles[index] = updatedArticle;
+        filteredArticles = [...articles];
+        renderArticles();
+        updateStats();
+        showNotification(`Article "${updatedArticle.title}" mis à jour avec succès !`, 'success');
+      }
+      return updatedArticle;
+    } else {
+      const errorText = await response.text();
+      console.error('❌ Update API Error Response:', errorText);
+      const error = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
+      throw new Error(error.error || 'Failed to update article');
+    }
+  } catch (error) {
+    console.error('❌ Error updating article:', error);
+    showNotification('Erreur lors de la mise à jour de l\'article.', 'error');
+    throw error;
+  }
+}
+
+// Delete article
+async function deleteArticle(id) {
+  try {
+    const response = await fetch(`/api/articles?id=${id}`, {
+      method: 'DELETE'
+    });
+    
+    if (response.ok) {
+      const index = articles.findIndex(a => a.id === id);
+      if (index !== -1) {
+        const deletedArticle = articles[index];
+        articles.splice(index, 1);
+        filteredArticles = [...articles];
+        renderArticles();
+        updateStats();
+        showNotification(`Article "${deletedArticle.title}" supprimé avec succès !`, 'success');
+      }
+      return true;
+    } else {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to delete article');
+    }
+  } catch (error) {
+    console.error('❌ Error deleting article:', error);
+    showNotification('Erreur lors de la suppression de l\'article.', 'error');
+    throw error;
+  }
+}
+
+// Search articles function
+function searchArticles(query) {
+  if (!query || query.trim() === '') {
+    filteredArticles = [...articles];
+  } else {
+    const searchTerm = query.toLowerCase().trim();
+    filteredArticles = articles.filter(article => 
+      (article.title && article.title.toLowerCase().includes(searchTerm)) ||
+      (article.content && article.content.toLowerCase().includes(searchTerm)) ||
+      (article.author_name && article.author_name.toLowerCase().includes(searchTerm)) ||
+      (article.category_name && article.category_name.toLowerCase().includes(searchTerm)) ||
+      (article.tags && (() => {
+        try {
+          const tags = JSON.parse(article.tags);
+          return Array.isArray(tags) && tags.some(tag => tag.toLowerCase().includes(searchTerm));
+        } catch (e) {
+          return false;
+        }
+      })())
+    );
+  }
+  renderArticles();
+  updateStats();
+}
+
+// Render articles in the table
+function renderArticles() {
+  console.log('🎨 Rendering articles...');
+  console.log('📋 Articles to render:', filteredArticles);
+  
+  const tbody = document.getElementById('articlesTableBody');
+  if (!tbody) {
+    console.error('❌ articlesTableBody not found!');
+    return;
+  }
+  
+  console.log('✅ Found tbody, rendering...');
+
+  tbody.innerHTML = filteredArticles.map(article => `
+    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700" data-article-id="${article.id}">
+      <td class="px-6 py-4 w-80">
+        <div class="flex items-center">
+          <div class="w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+            ${getArticleImage(article)}
+          </div>
+          <div>
+            <div class="text-sm font-medium text-gray-900 dark:text-white">${article.title || 'Sans titre'}</div>
+            <div class="text-sm text-gray-500 dark:text-gray-400">${article.excerpt || 'Aucun extrait'}</div>
+          </div>
+        </div>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white w-32">
+        ${article.author_name || 'Auteur inconnu'}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap w-32">
+        <span class="inline-flex px-3 py-1.5 text-xs font-semibold rounded-full bg-gradient-to-r from-purple-500 to-violet-500 text-white shadow-lg shadow-purple-500/25">
+          ${article.category_name || 'Non catégorisé'}
+        </span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap w-24">
+        <span class="inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold tracking-wider uppercase ${getStatusColor(article.status)} transition-all duration-200 hover:scale-105">
+          ${getStatusText(article.status)}
+        </span>
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 w-32">
+        ${formatDate(article.created_at)}
+      </td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium w-40">
+        <div class="flex items-center space-x-2">
+          <button 
+            onclick="editArticle(${article.id})" 
+            class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+            title="Modifier l'article"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+          </button>
+          <button 
+            onclick="deleteArticleConfirm(${article.id})"
+            class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            title="Supprimer l'article"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a2 2 0 00-2 2v3M4 7h16"></path>
+            </svg>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+  
+  console.log('✅ Articles rendered successfully');
+  console.log('📊 Table rows created:', tbody.children.length);
+}
+
+// Helper function to get article image
+function getArticleImage(article) {
+  if (article.featured_image) {
+    try {
+      let imageData;
+      if (typeof article.featured_image === 'string') {
+        imageData = JSON.parse(article.featured_image);
+      } else if (typeof article.featured_image === 'object') {
+        imageData = article.featured_image;
+      }
+      
+      if (imageData && imageData.url && isValidImageUrl(imageData.url)) {
+        // Create a more robust image element with better error handling
+        const sanitizedUrl = sanitizeImageUrl(imageData.url);
+        
+        // Check if it's a data URL (GPT-generated image)
+        const isDataUrl = sanitizedUrl.startsWith('data:image/');
+        
+        return `
+          <img 
+            src="${sanitizedUrl}" 
+            alt="${imageData.alt || (article.title || 'Article')}" 
+            class="w-10 h-10 rounded-lg object-cover" 
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+            onload="this.nextElementSibling.style.display='none';"
+            ${isDataUrl ? 'data-gpt-generated="true"' : ''}
+          />
+          <div class="w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center flex-shrink-0" style="display: flex;">
+            <svg class="w-6 h-6 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
+            </svg>
+          </div>
+        `;
+      }
+    } catch (e) {
+      console.warn('Invalid featured_image JSON:', article.featured_image);
+    }
+  }
+  
+  return `<svg class="w-6 h-6 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
+  </svg>`;
+}
+
+// Helper function to get status color
+function getStatusColor(status) {
+  switch (status) {
+    case 'published':
+      return 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25 border-0';
+    case 'draft':
+      return 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25 border-0';
+    case 'pending':
+      return 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25 border-0';
+    case 'deleted':
+      return 'bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg shadow-red-500/25 border-0';
+    case 'archived':
+      return 'bg-gradient-to-r from-gray-500 to-slate-500 text-white shadow-lg shadow-gray-500/25 border-0';
+    default:
+      return 'bg-gradient-to-r from-gray-400 to-gray-500 text-white shadow-lg shadow-gray-400/25 border-0';
+  }
+}
+
+// Helper function to get status text
+function getStatusText(status) {
+  switch (status) {
+    case 'published':
+      return 'Publié';
+    case 'draft':
+      return 'Brouillon';
+    case 'pending':
+      return 'En attente';
+    case 'deleted':
+      return 'Supprimé';
+    case 'archived':
+      return 'Archivé';
+    default:
+      return status;
+  }
+}
+
+// Helper function to validate image URLs
+function isValidImageUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  
+  // Check if it's a data URL (GPT-generated image)
+  if (url.startsWith('data:image/')) {
+    return true;
+  }
+  
+  // Check if it's a server-uploaded image URL
+  if (url.startsWith('/api/uploads/') || url.startsWith('/uploads/')) {
+    return true;
+  }
+  
+  // Check if it's a valid HTTP/HTTPS URL
+  try {
+    const urlObj = new URL(url);
+    return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+  } catch (e) {
+    return false;
+  }
+}
+
+// Helper function to sanitize image URLs
+function sanitizeImageUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  
+  // If it's a data URL, return as is (GPT-generated image)
+  if (url.startsWith('data:image/')) {
+    return url;
+  }
+  
+  // For regular URLs, sanitize and validate
+  try {
+    const urlObj = new URL(url);
+    // Only allow http and https protocols
+    if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
+      return urlObj.toString();
+    }
+    return '';
+  } catch (e) {
+    return '';
+  }
+}
+
+// Helper function to format date
+function formatDate(dateString) {
+  if (!dateString) return 'N/A';
+  return new Date(dateString).toLocaleDateString('fr-FR');
+}
+
+// Update statistics
+function updateStats() {
+  console.log('📊 Updating statistics...');
+  
+  const totalArticles = articles.length;
+  const publishedArticles = articles.filter(a => a.status === 'published').length;
+  const draftArticles = articles.filter(a => a.status === 'draft').length;
+  const pendingArticles = articles.filter(a => a.status === 'pending').length;
+  const deletedArticles = articles.filter(a => a.status === 'deleted').length;
+
+  console.log('📈 Stats calculated:', {
+    total: totalArticles,
+    published: publishedArticles,
+    draft: draftArticles,
+    pending: pendingArticles,
+    deleted: deletedArticles
+  });
+
+  // Update the articles count display
+  const articlesCountElement = document.getElementById('articlesCount');
+  if (articlesCountElement) {
+    articlesCountElement.textContent = totalArticles;
+    console.log('✅ Articles count updated:', totalArticles);
+  } else {
+    console.warn('⚠️ articlesCount element not found');
+  }
+
+  // Update stats display if elements exist (for future statistics cards)
+  const totalElement = document.querySelector('[data-stat="total"]');
+  const publishedElement = document.querySelector('[data-stat="published"]');
+  const pendingElement = document.querySelector('[data-stat="pending"]');
+  const deletedElement = document.querySelector('[data-stat="deleted"]');
+  
+  if (totalElement) {
+    totalElement.textContent = totalArticles;
+    console.log('✅ Total articles updated:', totalArticles);
+  }
+  
+  if (publishedElement) publishedElement.textContent = publishedArticles;
+  if (pendingElement) pendingElement.textContent = pendingArticles;
+  if (deletedElement) deletedElement.textContent = deletedArticles;
+}
+
+// Global functions for edit/delete buttons
+window.editArticle = async function(articleId) {
+  console.log('🔧 Edit article called with ID:', articleId);
+  console.log('🔧 Function called successfully!');
+  console.log('📋 Available articles:', articles);
+  
+  // Ensure articles are loaded
+  if (!articles || articles.length === 0) {
+    console.log('🔄 No articles loaded, fetching from API...');
+    await loadArticles();
+  }
+  
+  const article = articles.find(a => a.id === articleId);
+  if (!article) {
+    console.error('❌ Article not found with ID:', articleId);
+    console.log('🔍 Available article IDs:', articles.map(a => a.id));
+    return;
+  }
+  
+  console.log('📄 Article to edit:', article);
+
+  // Load categories once for select
+  if (categoriesCache.length === 0) {
+    try {
+      const r = await fetch('/api/categories');
+      const data = await r.json();
+      categoriesCache = Array.isArray(data) ? data : (data?.categories || []);
+    } catch (_) {}
+  }
+
+  // Populate form
+  document.getElementById('editArticleId').value = article.id;
+  document.getElementById('editTitle').value = article.title || '';
+  document.getElementById('editExcerpt').value = article.excerpt || '';
+  document.getElementById('editContent').value = article.content || '';
+      // Prefill image url if present and show current image preview
+    try {
+      let imgUrl = '';
+      if (article.featured_image) {
+        if (typeof article.featured_image === 'string') {
+          try {
+            const img = JSON.parse(article.featured_image);
+            imgUrl = img && img.url ? img.url : '';
+          } catch (e) {
+            // If it's not valid JSON, treat it as a direct URL
+            imgUrl = article.featured_image;
+          }
+        } else if (typeof article.featured_image === 'object' && article.featured_image.url) {
+          imgUrl = article.featured_image.url;
+        }
+      }
+      
+      // Only set the URL if it's valid
+      if (imgUrl && isValidImageUrl(imgUrl)) {
+        document.getElementById('editImageUrl').value = imgUrl;
+        
+        // Show current image preview if image exists
+        const currentImagePreview = document.getElementById('currentImagePreview');
+        const currentImage = document.getElementById('currentImage');
+        if (currentImagePreview && currentImage) {
+          // Use sanitized URL for preview
+          const sanitizedUrl = sanitizeImageUrl(imgUrl);
+          currentImage.src = sanitizedUrl;
+          currentImagePreview.classList.remove('hidden');
+          
+          // Add error handling for the preview image
+          currentImage.onerror = function() {
+            console.warn('Failed to load preview image:', sanitizedUrl);
+            currentImagePreview.classList.add('hidden');
+          };
+        }
+      } else {
+        document.getElementById('editImageUrl').value = '';
+        console.warn('Invalid or missing image URL:', imgUrl);
+      }
+    } catch (error) {
+      console.warn('Error parsing featured_image:', error);
+      document.getElementById('editImageUrl').value = '';
+    }
+  const catSel = document.getElementById('editCategory');
+  if (catSel) {
+    catSel.innerHTML = '<option value="">Non catégorisé</option>' + (categoriesCache.map(c => `<option value="${c.id}">${c.name}</option>`).join(''));
+    if (article.category_id) catSel.value = String(article.category_id);
+  }
+  const statusSel = document.getElementById('editStatus');
+  if (statusSel) statusSel.value = article.status || 'draft';
+  const featSel = document.getElementById('editFeatured');
+  if (featSel) featSel.value = (article.is_featured ? 'true' : 'false');
+
+  // Show modal
+  document.getElementById('editArticleModal').classList.remove('hidden');
+  
+  // Setup close handlers after modal is shown
+  setupCloseHandlers();
+  setupModalBackdropHandlers();
+  
+  // Setup form submission handler
+  setupEditFormHandler();
+};
+
+// Close modal handlers - will be set up when modal is shown
+function setupCloseHandlers() {
+  const cancelEditArticle = document.getElementById('cancelEditArticle');
+  const cancelEditArticleBottom = document.getElementById('cancelEditArticleBottom');
+  
+  if (cancelEditArticle) {
+    cancelEditArticle.removeEventListener('click', closeEditModal);
+    cancelEditArticle.addEventListener('click', closeEditModal);
+  }
+  
+  if (cancelEditArticleBottom) {
+    cancelEditArticleBottom.removeEventListener('click', closeEditModal);
+    cancelEditArticleBottom.addEventListener('click', closeEditModal);
+  }
+}
+
+function closeEditModal() {
+  document.getElementById('editArticleModal').classList.add('hidden');
+  resetImagePreviews();
+  // Don't reset form fields here - let the form submission handle it
+  // document.getElementById('editArticleForm').reset();
+}
+
+// Setup form submission handler
+function setupEditFormHandler() {
+  const form = document.getElementById('editArticleForm');
+  console.log('🔍 Looking for edit form:', form);
+  if (form) {
+    console.log('✅ Found edit form, setting up submit handler');
+    // Remove existing listener to prevent duplicates
+    form.removeEventListener('submit', handleEditFormSubmit);
+    form.addEventListener('submit', handleEditFormSubmit);
+    console.log('✅ Submit handler attached to form');
+  } else {
+    console.error('❌ Edit form not found!');
+  }
+}
+
+// Handle edit form submission
+async function handleEditFormSubmit(event) {
+  event.preventDefault();
+  console.log('🎯 Form submission prevented, processing manually...');
+  
+  try {
+    console.log('📝 Edit form submitted, processing...');
+    
+    // Get form data
+    const articleId = document.getElementById('editArticleId').value;
+    const title = document.getElementById('editTitle').value.trim();
+    const excerpt = document.getElementById('editExcerpt').value.trim();
+    const content = document.getElementById('editContent').value.trim();
+    const categoryId = document.getElementById('editCategory').value;
+    const status = document.getElementById('editStatus').value;
+    const isFeatured = document.getElementById('editFeatured').value === 'true';
+    
+    console.log('📋 Form data:', { articleId, title, excerpt, content, categoryId, status, isFeatured });
+    
+    // Validate that we have the required data
+    if (!articleId) {
+      throw new Error('Article ID is missing');
+    }
+    if (!title) {
+      throw new Error('Title is required');
+    }
+    if (!content) {
+      throw new Error('Content is required');
+    }
+    
+    // Validation
+    if (!title || !content) {
+      alert('Le titre et le contenu sont obligatoires.');
+      return;
+    }
+    
+    // Prepare payload
+    const payload = {
+      id: parseInt(articleId),
+      title: title,
+      excerpt: excerpt,
+      content: content,
+      category_id: categoryId ? parseInt(categoryId) : null,
+      status: status,
+      is_featured: isFeatured,
+      author_id: 1 // Default author
+    };
+    
+    // Handle image data
+    const imgUrl = document.getElementById('editImageUrl').value.trim();
+    const imageFileUpload = document.getElementById('imageFileUpload');
+    
+    console.log('🖼️ Image handling - imgUrl:', imgUrl, 'hasFile:', imageFileUpload && imageFileUpload.files.length > 0);
+    
+    if (imgUrl.length > 0 && isValidImageUrl(imgUrl)) {
+      // Use URL if provided and valid
+      payload.featured_image = { 
+        url: sanitizeImageUrl(imgUrl),
+        alt: title || 'Article image',
+        type: 'url'
+      };
+      console.log('🖼️ Using new image URL:', payload.featured_image);
+    } else if (imageFileUpload && imageFileUpload.files.length > 0) {
+      // Use uploaded file if present
+      const file = imageFileUpload.files[0];
+      if (file) {
+        // Send the file data to the backend for processing
+        payload.featured_image = file;
+        console.log('📁 Sending uploaded file:', file.name, file.size, file.type);
+      }
+    } else {
+      // Keep existing image if no new image is provided
+      // We'll get the current article data from the form or use null
+      const currentImageUrl = document.getElementById('editImageUrl').value.trim();
+      if (currentImageUrl && currentImageUrl !== '') {
+        // If there's a current image URL, keep it
+        payload.featured_image = { 
+          url: currentImageUrl, 
+          alt: title || 'Article image', 
+          type: 'existing' 
+        };
+        console.log('🔄 Keeping existing image URL:', payload.featured_image);
+      } else {
+        // No image provided, set to null
+        payload.featured_image = null;
+        console.log('❌ No image to keep, setting to null');
+      }
+    }
+    
+    console.log('📤 Sending update payload:', payload);
+    console.log('🖼️ Featured image in payload:', payload.featured_image);
+    
+    // Send update request with retry logic
+    let response;
+    let retryCount = 0;
+    const maxRetries = 2;
+    
+    while (retryCount < maxRetries) {
+      try {
+        console.log(`🔄 Attempt ${retryCount + 1} of ${maxRetries}`);
+        
+        response = await fetch('/api/articles', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+        
+        console.log('📡 Response status:', response.status);
+        console.log('📡 Response headers:', response.headers);
+        
+        if (response.ok) {
+          break; // Success, exit retry loop
+        }
+        
+        const errorData = await response.json();
+        console.log('⚠️ Update failed, error:', errorData);
+        
+        if (retryCount < maxRetries - 1) {
+          console.log('🔄 Retrying in 1 second...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        
+        retryCount++;
+      } catch (fetchError) {
+        console.error('❌ Fetch error:', fetchError);
+        if (retryCount < maxRetries - 1) {
+          console.log('🔄 Retrying in 1 second...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        retryCount++;
+      }
+    }
+    
+    if (!response || !response.ok) {
+      const errorData = await response?.json();
+      throw new Error(errorData?.error || `HTTP ${response?.status}: ${response?.statusText}` || 'Update failed after retries');
+    }
+    
+    const updatedArticle = await response.json();
+    console.log('✅ Article updated successfully:', updatedArticle);
+    console.log('🖼️ Featured image in response:', updatedArticle.featured_image);
+    
+    // Close modal
+    closeEditModal();
+    
+    // Reset form after successful submission
+    document.getElementById('editArticleForm').reset();
+    
+    // Refresh articles list
+    await loadArticles();
+    
+    // Force refresh of the specific article's image display
+    refreshArticleImageDisplay(parseInt(articleId), payload.featured_image);
+    
+    // Show success message
+    showNotification('Article mis à jour avec succès!', 'success');
+    
+  } catch (error) {
+    console.error('❌ Error updating article:', error);
+    alert(`Erreur lors de la mise à jour: ${error.message}`);
+  }
+}
+
+// Setup backdrop click and ESC key handlers
+function setupModalBackdropHandlers() {
+  const modal = document.getElementById('editArticleModal');
+  const backdrop = modal.querySelector('.absolute.inset-0.bg-black\\/60');
+  
+  if (backdrop) {
+    backdrop.removeEventListener('click', closeEditModal);
+    backdrop.addEventListener('click', closeEditModal);
+  }
+  
+  // ESC key handler
+  document.removeEventListener('keydown', handleEscKey);
+  document.addEventListener('keydown', handleEscKey);
+}
+
+function handleEscKey(event) {
+  if (event.key === 'Escape') {
+    const modal = document.getElementById('editArticleModal');
+    if (!modal.classList.contains('hidden')) {
+      closeEditModal();
+    }
+  }
+}
+
+// Image upload functionality
+function setupImageHandlers() {
+  const imageFileUpload = document.getElementById('imageFileUpload');
+  const removeCurrentImage = document.getElementById('removeCurrentImage');
+  const removeUploadedImage = document.getElementById('removeUploadedImage');
+  const editImageUrl = document.getElementById('editImageUrl');
+
+  if (imageFileUpload) {
+    imageFileUpload.addEventListener('change', handleImageUpload);
+  }
+
+  if (removeCurrentImage) {
+    removeCurrentImage.addEventListener('click', () => {
+      document.getElementById('currentImagePreview').classList.add('hidden');
+      editImageUrl.value = '';
+    });
+  }
+
+  if (removeUploadedImage) {
+    removeUploadedImage.addEventListener('click', () => {
+      document.getElementById('uploadedImagePreview').classList.add('hidden');
+      imageFileUpload.value = '';
+    });
+  }
+
+  // Clear URL input when file is uploaded
+  if (editImageUrl) {
+    editImageUrl.addEventListener('input', () => {
+      if (editImageUrl.value) {
+        document.getElementById('uploadedImagePreview').classList.add('hidden');
+        imageFileUpload.value = '';
+      }
+    });
+  }
+}
+
+function handleImageUpload(event) {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const uploadedImage = document.getElementById('uploadedImage');
+      const uploadedImagePreview = document.getElementById('uploadedImagePreview');
+      
+      if (uploadedImage && uploadedImagePreview) {
+        uploadedImage.src = e.target.result;
+        uploadedImagePreview.classList.remove('hidden');
+        
+        // Clear URL input when file is uploaded
+        document.getElementById('editImageUrl').value = '';
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function resetImagePreviews() {
+  // Hide all image previews
+  const currentImagePreview = document.getElementById('currentImagePreview');
+  const uploadedImagePreview = document.getElementById('uploadedImagePreview');
+  
+  if (currentImagePreview) currentImagePreview.classList.add('hidden');
+  if (uploadedImagePreview) uploadedImagePreview.classList.add('hidden');
+  
+  // Reset file input
+  const imageFileUpload = document.getElementById('imageFileUpload');
+  if (imageFileUpload) imageFileUpload.value = '';
+}
+
+// Save edit submit
+const editForm = document.getElementById('editArticleForm');
+if (editForm) {
+  editForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    console.log('📝 Edit form submitted');
+    
+    const id = Number(document.getElementById('editArticleId').value);
+    const payload = {
+      title: document.getElementById('editTitle').value.trim(),
+      excerpt: document.getElementById('editExcerpt').value.trim(),
+      content: document.getElementById('editContent').value,
+      category_id: document.getElementById('editCategory').value ? Number(document.getElementById('editCategory').value) : null,
+      status: document.getElementById('editStatus').value,
+      is_featured: document.getElementById('editFeatured').value === 'true'
+    };
+
+    // Handle featured image (URL or file upload)
+    const imgUrl = document.getElementById('editImageUrl').value.trim();
+    const imageFileUpload = document.getElementById('imageFileUpload');
+    
+    if (imgUrl.length > 0 && isValidImageUrl(imgUrl)) {
+      // Use URL if provided and valid
+      payload.featured_image = { url: sanitizeImageUrl(imgUrl) };
+    } else if (imageFileUpload.files.length > 0) {
+      // Use uploaded file if present
+      const file = imageFileUpload.files[0];
+      // For now, we'll convert the file to a data URL
+      // In a real application, you'd upload this to a server/CDN
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        payload.featured_image = { url: e.target.result };
+        // Continue with form submission
+        submitUpdate();
+      };
+      reader.readAsDataURL(file);
+      return; // Don't submit yet, wait for file reading
+    } else {
+      payload.featured_image = null;
+    }
+    
+    // Submit the form
+    submitUpdate();
+    
+    async function submitUpdate() {
+      try {
+        console.log('🔄 Calling updateArticle...');
+        await updateArticle(id, payload);
+        console.log('✅ Update successful');
+        document.getElementById('editArticleModal').classList.add('hidden');
+        resetImagePreviews();
+        // Reload list from API
+        await loadArticles();
+        showNotification('Article mis à jour avec succès !', 'success');
+      } catch (err) {
+        console.error('❌ Edit failed:', err);
+        showNotification('Erreur lors de la mise à jour.', 'error');
+      }
+    }
+
+
+  });
+}
+
+window.deleteArticleConfirm = function(articleId) {
+  console.log('🗑️ Delete article called with ID:', articleId);
+  console.log('🗑️ Function called successfully!');
+  if (confirm('Êtes-vous sûr de vouloir supprimer cet article ? Cette action est irréversible.')) {
+    deleteArticle(articleId);
+  }
+};
+
+// Search functionality
+function setupSearch() {
+  const searchInput = document.getElementById('searchArticles');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      searchArticles(e.target.value);
+    });
+  }
+}
+
+// Refresh article image display after update
+function refreshArticleImageDisplay(articleId, newImageData) {
+  try {
+    console.log('🔄 Refreshing image display for article:', articleId);
+    console.log('🖼️ New image data:', newImageData);
+    
+    // Find the article row in the table
+    const articleRow = document.querySelector(`tr[data-article-id="${articleId}"]`);
+    if (!articleRow) {
+      console.log('⚠️ Article row not found for ID:', articleId);
+      console.log('🔍 Available rows:', document.querySelectorAll('tr[data-article-id]'));
+      return;
+    }
+    
+    console.log('✅ Found article row:', articleRow);
+    
+    // Find the image cell (first cell with image)
+    const imageCell = articleRow.querySelector('td:first-child .w-10.h-10');
+    if (!imageCell) {
+      console.log('⚠️ Image cell not found');
+      console.log('🔍 Available cells in first td:', articleRow.querySelector('td:first-child').innerHTML);
+      return;
+    }
+    
+    console.log('✅ Found image cell:', imageCell);
+    
+    // Update the image display
+    if (newImageData && newImageData.url) {
+      console.log('🖼️ Creating new image element with URL:', newImageData.url);
+      
+      // Check if it's a data URL (GPT-generated image)
+      const isDataUrl = newImageData.url.startsWith('data:image/');
+      
+      // Create new image element
+      const newImage = document.createElement('img');
+      newImage.src = newImageData.url;
+      newImage.alt = newImageData.alt || 'Article image';
+      newImage.className = 'w-10 h-10 rounded-lg object-cover';
+      
+      // Add data attribute for GPT-generated images
+      if (isDataUrl) {
+        newImage.setAttribute('data-gpt-generated', 'true');
+      }
+      
+      newImage.onerror = function() {
+        console.log('❌ Image failed to load:', this.src);
+        this.style.display = 'none';
+        if (this.nextElementSibling) {
+          this.nextElementSibling.style.display = 'flex';
+        }
+      };
+      newImage.onload = function() {
+        console.log('✅ Image loaded successfully:', this.src);
+        if (this.nextElementSibling) {
+          this.nextElementSibling.style.display = 'none';
+        }
+      };
+      
+      // Replace the existing image
+      const existingImage = imageCell.querySelector('img');
+      if (existingImage) {
+        existingImage.replaceWith(newImage);
+      } else {
+        // If no existing image, insert before the fallback icon
+        imageCell.insertBefore(newImage, imageCell.firstChild);
+      }
+      
+      console.log('✅ Image display updated successfully');
+      
+    } else {
+      console.log('⚠️ No valid image data to display');
+      // Show fallback icon
+      const existingImage = imageCell.querySelector('img');
+      if (existingImage) {
+        existingImage.style.display = 'none';
+      }
+      if (imageCell.nextElementSibling) {
+        imageCell.nextElementSibling.style.display = 'flex';
+      }
+    }
+    
+  } catch (error) {
+    console.error('❌ Error refreshing image display:', error);
+  }
+}
+
+// Show notification
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full ${
+    type === 'success' ? 'bg-green-500 text-white' :
+    type === 'error' ? 'bg-red-500 text-white' :
+    'bg-blue-500 text-white'
+  }`;
+  
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  
+  // Show notification
+  setTimeout(() => {
+    notification.classList.remove('translate-x-full');
+  }, 100);
+  
+  // Hide and remove notification
+  setTimeout(() => {
+    notification.classList.add('translate-x-full');
+    setTimeout(() => {
+      document.body.removeChild(notification);
+    }, 300);
+  }, 3000);
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🚀 DOM loaded, initializing articles...');
+  console.log('🔍 Looking for articlesCount element...');
+  const articlesCountElement = document.getElementById('articlesCount');
+  if (articlesCountElement) {
+    console.log('✅ Found articlesCount element:', articlesCountElement);
+    console.log('📊 Current articles count text:', articlesCountElement.textContent);
+  } else {
+    console.error('❌ articlesCount element not found!');
+  }
+  
+  // Also set up the edit form handler immediately
+  console.log('🔧 Setting up edit form handler...');
+  setupEditFormHandler();
+  console.log('✅ Edit form handler set up');
+  
+  loadArticles();
+  setupSearch();
+  setupImageHandlers();
+});
