@@ -7,7 +7,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// Load environment variables
+// Load environment variables from config.env
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '../../../config.env') });
@@ -136,27 +136,38 @@ export async function executeQueryFactory(query, params = []) {
             });
           }
           
-          if (query.includes('LEFT JOIN users')) {
-            pipeline.push({
-              $lookup: {
-                from: 'users',
-                localField: 'author_id',
-                foreignField: '_id',
-                as: 'user'
-              }
-            });
-            pipeline.push({
-              $addFields: {
-                author_name: {
-                  $cond: {
-                    if: { $and: [{ $ne: ['$user.first_name', null] }, { $ne: ['$user.last_name', null] }] },
-                    then: { $concat: ['$user.first_name', ' ', '$user.last_name'] },
-                    else: '$user.username'
-                  }
-                }
-              }
-            });
-          }
+                     if (query.includes('LEFT JOIN users')) {
+             pipeline.push({
+               $lookup: {
+                 from: 'users',
+                 localField: 'author_id',
+                 foreignField: '_id',
+                 as: 'user'
+               }
+             });
+             pipeline.push({
+               $addFields: {
+                 author_name: {
+                   $cond: {
+                     if: { 
+                       $and: [
+                         { $ne: [{ $arrayElemAt: ['$user.first_name', 0] }, null] }, 
+                         { $ne: [{ $arrayElemAt: ['$user.last_name', 0] }, null] }
+                       ] 
+                     },
+                     then: { 
+                       $concat: [
+                         { $arrayElemAt: ['$user.first_name', 0] }, 
+                         ' ', 
+                         { $arrayElemAt: ['$user.last_name', 0] }
+                       ] 
+                     },
+                     else: { $arrayElemAt: ['$user.username', 0] }
+                   }
+                 }
+               }
+             });
+           }
           
           const result = await collection.aggregate(pipeline).toArray();
           console.log('🔍 Debug: MongoDB result:', result);
