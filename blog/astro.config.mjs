@@ -11,7 +11,8 @@ export default defineConfig({
   adapter: node({
     mode: 'standalone'
   }),
-  site: 'https://your-domain.com',
+  site: 'https://final-2-xuct.onrender.com',
+  base: '/',
   integrations: [
     tailwind(),
     mdx(),
@@ -43,6 +44,19 @@ export default defineConfig({
     },
     optimizeDeps: {
       include: ['openai']
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'astro': ['astro'],
+            'tailwind': ['@tailwindcss/typography', '@tailwindcss/forms']
+          }
+        }
+      }
+    },
+    ssr: {
+      noExternal: ['@tailwindcss/typography', '@tailwindcss/forms']
     }
   }
 });
