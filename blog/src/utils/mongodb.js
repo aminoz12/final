@@ -1,107 +1,72 @@
-import { MongoClient, ServerApiVersion } from 'mongodb';
+import dotenv from 'dotenv';
 
-// MongoDB Atlas connection configuration - Use environment variables
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
-const DB_NAME = process.env.MONGODB_DB_NAME || 'mad2moi_blog';
+// Load environment variables
+dotenv.config();
 
-let client;
-let db;
+let mongoClient = null;
 
-/**
- * Connect to MongoDB Atlas
- */
+// MongoDB configuration
+const mongoConfig = {
+  uri: process.env.MONGODB_URI || 'mongodb://localhost:27017',
+  dbName: process.env.MONGODB_DB_NAME || 'mad2moi_blog'
+};
+
+// Connect to MongoDB
 export async function connectToMongoDB() {
   try {
-    if (!client) {
-      // Create a MongoClient with MongoClientOptions object to set the Stable API version
-      client = new MongoClient(MONGODB_URI, {
-        serverApi: {
-          version: ServerApiVersion.v1,
-          strict: true,
-          deprecationErrors: true,
-        }
-      });
-      
-      await client.connect();
-      console.log('✅ Blog connected to MongoDB Atlas');
-      
-      db = client.db(DB_NAME);
-      console.log(`✅ Blog using database: ${DB_NAME}`);
-      
-      // Send a ping to confirm successful connection
-      await client.db("admin").command({ ping: 1 });
-      console.log("✅ Blog pinged MongoDB Atlas successfully!");
+    if (mongoClient) {
+      return mongoClient;
     }
-    return { client, db };
+
+    // Import MongoDB dynamically
+    const { MongoClient } = await import('mongodb');
+    
+    mongoClient = new MongoClient(mongoConfig.uri, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+
+    await mongoClient.connect();
+    console.log('✅ Blog MongoDB connection established');
+    
+    // Test the connection
+    const db = mongoClient.db(mongoConfig.dbName);
+    await db.admin().ping();
+    console.log('✅ Blog MongoDB ping successful');
+    
+    return mongoClient;
   } catch (error) {
-    console.error('❌ Blog MongoDB connection error:', error);
+    console.error('❌ Blog MongoDB connection failed:', error);
     throw error;
   }
 }
 
-/**
- * Get database instance
- */
-export function getDB() {
-  if (!db) {
-    throw new Error('Database not connected. Call connectToMongoDB() first.');
+// Get MongoDB client
+export function getMongoClient() {
+  if (!mongoClient) {
+    throw new Error('MongoDB not connected. Call connectToMongoDB() first.');
   }
-  return db;
+  return mongoClient;
 }
 
-/**
- * Get collection
- */
-export function getCollection(collectionName) {
-  const db = getDB();
-  return db.collection(collectionName);
+// Get MongoDB database
+export function getMongoDB() {
+  if (!mongoClient) {
+    throw new Error('MongoDB not connected. Call connectToMongoDB() first.');
+  }
+  return mongoClient.db(mongoConfig.dbName);
 }
 
-/**
- * Close MongoDB connection
- */
-export async function closeMongoDBConnection() {
+// Close MongoDB connection
+export async function closeMongoDB() {
   try {
-    if (client) {
-      await client.close();
+    if (mongoClient) {
+      await mongoClient.close();
+      mongoClient = null;
       console.log('✅ Blog MongoDB connection closed');
-      client = null;
-      db = null;
     }
   } catch (error) {
     console.error('❌ Error closing Blog MongoDB connection:', error);
   }
 }
-
-/**
- * Test MongoDB connection
- */
-export async function testMongoDBConnection() {
-  try {
-    const { client, db } = await connectToMongoDB();
-    
-    // Test the connection with ping
-    await client.db("admin").command({ ping: 1 });
-    console.log('✅ Blog MongoDB ping successful');
-    
-    // List collections
-    const collections = await db.listCollections().toArray();
-    console.log('📚 Blog available collections:', collections.map(c => c.name));
-    
-    return true;
-  } catch (error) {
-    console.error('❌ Blog MongoDB test failed:', error);
-    return false;
-  }
-}
-
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  await closeMongoDBConnection();
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-  await closeMongoDBConnection();
-  process.exit(0);
-});
