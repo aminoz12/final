@@ -9,6 +9,8 @@ export default defineConfig({
   adapter: node({
     mode: 'standalone'
   }),
+  site: 'https://final-2-xuct.onrender.com',
+  base: '/',
 
   server: {
     port: 4322,
@@ -39,6 +41,19 @@ export default defineConfig({
       }
     },
     // Ensure static files are served correctly
-    publicDir: 'public'
+    publicDir: 'public',
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'astro': ['astro'],
+            'tailwind': ['@tailwindcss/typography', '@tailwindcss/forms']
+          }
+        }
+      }
+    },
+    ssr: {
+      noExternal: ['@tailwindcss/typography', '@tailwindcss/forms']
+    }
   }
 });
