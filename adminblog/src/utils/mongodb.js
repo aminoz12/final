@@ -2,7 +2,10 @@ import { MongoClient, ServerApiVersion } from 'mongodb';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const MONGODB_URI = process.env.MONGO_URI || 'mongodb://localhost:27017';
+// Use Atlas URI or fallback to local (for dev)
+const MONGODB_URI =
+  process.env.MONGO_URI ||
+  'mongodb+srv://jules:123jules@cluster0.jzw94.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
 const DB_NAME = process.env.MONGO_DB_NAME || 'mad2moi_blog';
 
 let client;
@@ -20,6 +23,9 @@ export async function connectToMongoDB() {
           strict: true,
           deprecationErrors: true,
         },
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
       });
 
       await client.connect();
@@ -28,7 +34,7 @@ export async function connectToMongoDB() {
       console.log('✅ Connected to MongoDB');
       console.log(`🌐 Using database: ${DB_NAME}`);
 
-      // Optional: ping to check connection
+      // Optional ping to verify connection
       await client.db('admin').command({ ping: 1 });
       console.log('✅ MongoDB ping successful');
     }
@@ -77,7 +83,7 @@ export async function testMongoDBConnection() {
   try {
     await connectToMongoDB();
     const collections = await db.listCollections().toArray();
-    console.log('📚 Available collections:', collections.map(c => c.name));
+    console.log('📚 Available collections:', collections.map((c) => c.name));
     return true;
   } catch (error) {
     console.error('❌ MongoDB test failed:', error);
