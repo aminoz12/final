@@ -16,23 +16,29 @@ const port = process.env.PORT || 3000;
 // Create HTTP server
 const server = createServer(handler);
 
-// Initialize MongoDB connection
 async function startServer() {
   try {
-    // Start the server first (so Render can detect the port)
+    // Start the server first (Render requires an open port)
     server.listen(port, '0.0.0.0', () => {
       console.log(`🚀 Blog server running on port ${port}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🔗 Server bound to 0.0.0.0:${port}`);
     });
 
-    // Try to connect to MongoDB in production (but don't fail if it doesn't work)
+    // Connect to MongoDB in production
     if (process.env.NODE_ENV === 'production') {
+      const mongoUri = process.env.MONGO_URI;
+
+      if (!mongoUri) {
+        console.warn('⚠️ No MONGO_URI provided in environment. Skipping MongoDB connection.');
+        return;
+      }
+
       try {
-        await connectToMongoDB();
+        await connectToMongoDB(mongoUri);
         console.log('✅ Blog MongoDB connected successfully');
       } catch (mongoError) {
-        console.warn('⚠️ MongoDB connection failed, continuing without database:', mongoError.message);
+        console.error('❌ Failed to connect to MongoDB:', mongoError.message);
         console.log('📝 Blog will work with static content only');
       }
     }
@@ -42,7 +48,7 @@ async function startServer() {
   }
 }
 
-// Handle graceful shutdown
+// Graceful shutdown
 process.on('SIGINT', async () => {
   console.log('🛑 Shutting down blog server...');
   server.close(() => {
@@ -59,7 +65,6 @@ process.on('SIGTERM', async () => {
   });
 });
 
-// Start the server
 startServer();
 
 export default server;
