@@ -16,9 +16,10 @@ const port = process.env.PORT || 3000;
 // Create HTTP server
 const server = createServer(handler);
 
+// Start server and connect to MongoDB if needed
 async function startServer() {
   try {
-    // Start the server first (Render requires an open port)
+    // Start the server first (Render requires open port)
     server.listen(port, '0.0.0.0', () => {
       console.log(`🚀 Blog server running on port ${port}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
@@ -28,7 +29,6 @@ async function startServer() {
     // Connect to MongoDB in production
     if (process.env.NODE_ENV === 'production') {
       const mongoUri = process.env.MONGO_URI;
-
       if (!mongoUri) {
         console.warn('⚠️ No MONGO_URI provided in environment. Skipping MongoDB connection.');
         return;
