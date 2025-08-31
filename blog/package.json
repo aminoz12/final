@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "astro dev",
-    "start": "node src/server.js",
+    "start": "astro build && node src/server.js"
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
