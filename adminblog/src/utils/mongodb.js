@@ -1,36 +1,36 @@
 import { MongoClient, ServerApiVersion } from 'mongodb';
+import dotenv from 'dotenv';
+dotenv.config();
 
-// MongoDB Atlas connection configuration - Use environment variables
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
-const DB_NAME = process.env.MONGODB_DB_NAME || 'mad2moi_blog';
+const MONGODB_URI = process.env.MONGO_URI || 'mongodb://localhost:27017';
+const DB_NAME = process.env.MONGO_DB_NAME || 'mad2moi_blog';
 
 let client;
 let db;
 
 /**
- * Connect to MongoDB Atlas
+ * Connect to MongoDB
  */
 export async function connectToMongoDB() {
   try {
     if (!client) {
-      // Create a MongoClient with MongoClientOptions object to set the Stable API version
       client = new MongoClient(MONGODB_URI, {
         serverApi: {
           version: ServerApiVersion.v1,
           strict: true,
           deprecationErrors: true,
-        }
+        },
       });
-      
+
       await client.connect();
-      console.log('✅ Connected to MongoDB Atlas');
-      
       db = client.db(DB_NAME);
-      console.log(`✅ Using database: ${DB_NAME}`);
-      
-      // Send a ping to confirm successful connection
-      await client.db("admin").command({ ping: 1 });
-      console.log("✅ Pinged your deployment. You successfully connected to MongoDB!");
+
+      console.log('✅ Connected to MongoDB');
+      console.log(`🌐 Using database: ${DB_NAME}`);
+
+      // Optional: ping to check connection
+      await client.db('admin').command({ ping: 1 });
+      console.log('✅ MongoDB ping successful');
     }
     return { client, db };
   } catch (error) {
@@ -42,19 +42,16 @@ export async function connectToMongoDB() {
 /**
  * Get database instance
  */
-export function getDB() {
-  if (!db) {
-    throw new Error('Database not connected. Call connectToMongoDB() first.');
-  }
+export function getMongoDB() {
+  if (!db) throw new Error('Database not connected. Call connectToMongoDB() first.');
   return db;
 }
 
 /**
  * Get collection
  */
-export function getCollection(collectionName) {
-  const db = getDB();
-  return db.collection(collectionName);
+export function getCollection(name) {
+  return getMongoDB().collection(name);
 }
 
 /**
@@ -78,16 +75,9 @@ export async function closeMongoDBConnection() {
  */
 export async function testMongoDBConnection() {
   try {
-    const { client, db } = await connectToMongoDB();
-    
-    // Test the connection
-    await db.admin().ping();
-    console.log('✅ MongoDB ping successful');
-    
-    // List collections
+    await connectToMongoDB();
     const collections = await db.listCollections().toArray();
     console.log('📚 Available collections:', collections.map(c => c.name));
-    
     return true;
   } catch (error) {
     console.error('❌ MongoDB test failed:', error);
