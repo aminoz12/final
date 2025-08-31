@@ -37,7 +37,7 @@ class GPT5Service {
         method: 'POST',
         headers: this._buildHeaders(),
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: 'gpt-5',
           messages: [{ role: 'user', content: 'Test' }],
           max_tokens: 5
         })
@@ -96,7 +96,7 @@ Format de réponse: JSON avec les champs suivants:
       const userPrompt = title ? `Génère un article sur: "${title}"` : prompt;
 
       const body = {
-        model: 'gpt-4o',
+        model: 'gpt-5',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -156,7 +156,7 @@ Format de réponse: JSON avec les champs suivants:
     try {
       const prompt = `Génère ${count} idées d'articles de blog pour la catégorie "${category || 'général'}" au format JSON.`;
       const body = {
-        model: 'gpt-4o',
+        model: 'gpt-5',
         messages: [
           { role: 'system', content: `You are a content ideas generator specialized in ${category}` },
           { role: 'user', content: prompt }
