@@ -10,37 +10,32 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '../config.env') });
 
-// Get port from environment or use default
-const port = process.env.PORT || 3000;
+// Get port from environment or fallback
+const PORT = process.env.PORT || 3000;
 
-// Create HTTP server
+// Create HTTP server using Astro handler
 const server = createServer(handler);
 
-// Start server and connect to MongoDB if needed
 async function startServer() {
   try {
-    // Start the server first (Render requires open port)
-    server.listen(port, '0.0.0.0', () => {
-      console.log(`🚀 Blog server running on port ${port}`);
+    // Bind server to 0.0.0.0 for Render
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Blog server running on port ${PORT}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🔗 Server bound to 0.0.0.0:${port}`);
+      console.log(`🔗 Server bound to 0.0.0.0:${PORT}`);
     });
 
-    // Connect to MongoDB in production
-    if (process.env.NODE_ENV === 'production') {
-      const mongoUri = process.env.MONGO_URI;
-      if (!mongoUri) {
-        console.warn('⚠️ No MONGO_URI provided in environment. Skipping MongoDB connection.');
-        return;
-      }
-
+    // Connect to MongoDB if URI is provided
+    if (process.env.MONGO_URI) {
       try {
-        await connectToMongoDB(mongoUri);
+        await connectToMongoDB(process.env.MONGO_URI);
         console.log('✅ Blog MongoDB connected successfully');
       } catch (mongoError) {
         console.error('❌ Failed to connect to MongoDB:', mongoError.message);
         console.log('📝 Blog will work with static content only');
       }
+    } else {
+      console.warn('⚠️ No MONGO_URI provided. Skipping MongoDB connection.');
     }
   } catch (error) {
     console.error('❌ Failed to start blog server:', error);
