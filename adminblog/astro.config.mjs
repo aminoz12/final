@@ -52,14 +52,10 @@ export default defineConfig({
       rollupOptions: {
         output: {
           manualChunks: {
-            'astro': ['astro'],
-            'tailwind': ['@tailwindcss/typography', '@tailwindcss/forms']
+            'astro': ['astro']
           }
         }
       }
-    },
-    ssr: {
-      noExternal: ['@tailwindcss/typography', '@tailwindcss/forms']
     }
   }
 });
