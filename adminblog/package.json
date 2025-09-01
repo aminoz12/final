@@ -10,17 +10,25 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "setup": "npm install && npm run init-db && npm run init-categories && npm run init-articles && npm run init-sync"
+    "init-db": "node scripts/init-db.js",
+    "update-users": "node scripts/update-users.js",
+    "init-sync": "node scripts/init-sync.js",
+    "init-categories": "node scripts/init-categories.js",
+    "init-articles": "node scripts/init-articles.js",
+    "init-chat-db": "node scripts/init-chat-db.js",
+    "fix-images": "node scripts/fix-article-images.js",
+    "test-db": "node scripts/test-database.js",
+    "test-sync": "node scripts/test-sync.js",
+    "test-mongodb": "node scripts/test-mongodb.js",
+    "setup": "npm install && npm run init-db && npm run init-categories && npm run init-articles && npm run init-sync",
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "dependencies": {
-    "astro": "^4.5.0",
-    "@astrojs/node": "^4.5.0",
-    "@astrojs/react": "^4.5.0",
-    "@astrojs/tailwind": "^4.5.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "tailwindcss": "^3.4.17",
+    "@astrojs/node": "^6.0.0",
+    "@astrojs/react": "^3.0.0",
+    "@astrojs/tailwind": "^5.0.0",
     "@supabase/supabase-js": "^2.0.0",
+    "astro": "^4.0.0",
     "bcryptjs": "^2.4.3",
     "date-fns": "^3.0.0",
     "dotenv": "^17.2.1",
@@ -30,6 +38,8 @@
     "mysql2": "^3.14.3",
     "nodemailer": "^6.0.0",
     "openai": "^4.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
     "react-hook-form": "^7.0.0",
     "react-hot-toast": "^2.0.0",
     "react-markdown": "^9.0.0",
@@ -45,7 +55,8 @@
     "@types/nodemailer": "^6.0.0",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
-    "@types/ws": "^8.0.0"
+    "@types/ws": "^8.0.0",
+    "tailwindcss": "^3.4.17"
   },
   "engines": {
     "node": ">=18.0.0"
