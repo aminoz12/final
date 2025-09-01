@@ -4,58 +4,69 @@ import tailwind from '@astrojs/tailwind';
 
 // https://astro.build/config
 export default defineConfig({
+  // Integrations
   integrations: [tailwind()],
+
+  // Output as server for Node deployment
   output: 'server',
   adapter: node({
-    mode: 'standalone'
+    mode: 'standalone',
   }),
-  site: 'https://danialblogs-3.onrender.com',
+
+  // Main site URL (used for absolute URLs)
+  site: 'https://admin.mad2moi.store',
   base: '/',
 
+  // Dev server settings
   server: {
     port: 4322,
-    host: true
+    host: true,
   },
+
+  // Vite configuration
   vite: {
     server: {
       allowedHosts: [
-        'danialblogs-3.onrender.com', 
-        'fr.mad2moi.store', 
         'admin.mad2moi.store',
-        '.onrender.com', // Allows all onrender.com subdomains
         'localhost',
         '127.0.0.1',
-        'a909b7338311.ngrok-free.app', // Allow ngrok host
-        '.ngrok-free.app', // Allow all ngrok-free.app subdomains
-        'admin.loca.lt', // Allow loca.lt host
-        'blog.loca.lt', // Allow blog.loca.lt host
-        '.loca.lt', // Allow all loca.lt subdomains
-        '.nip.io', // Allow nip.io hosts
-        '.xip.io', // Allow xip.io hosts
-        '.localhost.run', // Allow localhost.run hosts
-        '.serveo.net' // Allow serveo.net hosts
+        '.onrender.com',
+        '.ngrok-free.app',
+        '.loca.lt',
+        '.nip.io',
+        '.xip.io',
+        '.localhost.run',
+        '.serveo.net',
       ],
       proxy: {
         '/ws/chat': {
           target: 'ws://localhost:4322',
-          ws: true
-        }
-      }
+          ws: true,
+        },
+      },
     },
-    // Ensure static files are served correctly
+
+    // Ensure static assets are served correctly
     publicDir: 'public',
+
     build: {
       rollupOptions: {
         output: {
           manualChunks: {
-            'astro': ['astro'],
-            'tailwind': ['@tailwindcss/typography', '@tailwindcss/forms']
-          }
-        }
-      }
+            astro: ['astro'],
+            tailwind: ['@tailwindcss/typography', '@tailwindcss/forms'],
+          },
+        },
+      },
     },
+
+    // SSR settings to bundle Tailwind properly
     ssr: {
-      noExternal: ['@tailwindcss/typography', '@tailwindcss/forms']
-    }
-  }
+      noExternal: [
+        '@astrojs/tailwind',
+        '@tailwindcss/typography',
+        '@tailwindcss/forms',
+      ],
+    },
+  },
 });
