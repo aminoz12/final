@@ -1,22 +1,69 @@
 {
   "name": "mad2moi-blog-admin",
-  "version": "1.0.0",
   "private": true,
+  "version": "1.0.0",
+  "description": "Admin Dashboard for Mad2Moi Blog",
   "type": "module",
   "scripts": {
     "dev": "astro dev",
+    "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "start": "astro build && node ./dist/server/entry.mjs --host 0.0.0.0 --port $PORT"
+    "astro": "astro",
+    "init-db": "node scripts/init-db.js",
+    "update-users": "node scripts/update-users.js",
+    "init-sync": "node scripts/init-sync.js",
+    "init-categories": "node scripts/init-categories.js",
+    "init-articles": "node scripts/init-articles.js",
+    "init-chat-db": "node scripts/init-chat-db.js",
+    "fix-images": "node scripts/fix-article-images.js",
+    "test-db": "node scripts/test-database.js",
+    "test-sync": "node scripts/test-sync.js",
+    "setup": "npm install && npm run init-db && npm run init-categories && npm run init-articles && npm run init-sync",
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "dependencies": {
-    "@astrojs/node": "^8.2.6",
-    "@astrojs/tailwind": "^5.1.0",
-    "astro": "^4.15.2",
-    "tailwindcss": "^3.4.10"
+    "astro": "^4.16.19",
+    "@astrojs/node": "^7.0.0",
+    "@astrojs/react": "^3.0.0",
+    "@astrojs/tailwind": "^5.0.0",
+    "tailwindcss": "^3.4.17",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.52.0",
+    "react-hot-toast": "^2.4.1",
+    "react-markdown": "^9.0.1",
+    "recharts": "^2.12.7",
+    "lucide-react": "^0.300.0",
+    "bcryptjs": "^2.4.3",
+    "date-fns": "^3.6.0",
+    "dotenv": "^16.4.5",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.10.0",
+    "nodemailer": "^6.9.14",
+    "openai": "^4.56.0",
+    "sqlite3": "^5.1.7",
+    "ws": "^8.17.1"
   },
   "devDependencies": {
+    "@types/node": "^20.14.2",
+    "@types/react": "^18.3.2",
+    "@types/react-dom": "^18.3.2",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.47"
-  }
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "astro",
+    "admin",
+    "dashboard",
+    "blog",
+    "mad2moi",
+    "react",
+    "tailwindcss"
+  ],
+  "author": "Mad2Moi Team",
+  "license": "MIT"
 }
