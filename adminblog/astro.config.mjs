@@ -14,6 +14,10 @@ export default defineConfig({
   adapter: node({
     mode: 'standalone'
   }),
+  build: {
+    assets: '_astro',
+    inlineStylesheets: 'auto'
+  },
   site: 'https://admin.mad2moi.store',
   base: '/',
 
