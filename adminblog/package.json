@@ -24,7 +24,7 @@
     "test": "echo \"No tests specified\" && exit 0"
   },
   "dependencies": {
-    "@astrojs/node": "^6.0.0",
+    "@astrojs/node": "^7.0.0",
     "@astrojs/react": "^3.0.0",
     "@astrojs/tailwind": "^5.0.0",
     "@supabase/supabase-js": "^2.0.0",
