@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro build && node dist/server/entry.mjs --host 0.0.0.0 --port $PORT",
-    "build": "npm ci --force && astro build",
+    "build": "npm ci --force && npx tailwindcss -i ./src/styles/global.css -o ./src/styles/processed.css --minify && astro build",
     "build:clean": "rm -rf node_modules package-lock.json && npm install && astro build",
     "preview": "astro preview",
     "astro": "astro",
