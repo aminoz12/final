@@ -1,55 +1,27 @@
-import { handler } from '../dist/server/entry.mjs';
-import { createServer } from 'http';
-import { connectToMongoDB } from './utils/mongodb.js';
-import dotenv from 'dotenv';
+import { handler as ssrHandler } from './dist/server/entry.mjs';
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Load environment variables
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Get port from environment or use default
-const port = process.env.PORT || 3000;
+const app = express();
+const port = process.env.PORT || 4322;
 
-// Create HTTP server
-const server = createServer(handler);
+// Serve static files from the client directory
+app.use('/_astro', express.static(path.join(__dirname, 'dist/client/_astro')));
+app.use('/uploads', express.static(path.join(__dirname, 'dist/client/uploads')));
+app.use('/scripts', express.static(path.join(__dirname, 'dist/client/scripts')));
+app.use('/images', express.static(path.join(__dirname, 'dist/client/images')));
+app.use('/logo.png', express.static(path.join(__dirname, 'dist/client/logo.png')));
 
-// Initialize MongoDB connection
-async function startServer() {
-  try {
-    // Connect to MongoDB
-    await connectToMongoDB();
-    console.log('✅ MongoDB connected successfully');
-    
-    // Start the server
-    server.listen(port, () => {
-      console.log(`🚀 Server running on port ${port}`);
-      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-    });
-  } catch (error) {
-    console.error('❌ Failed to start server:', error);
-    process.exit(1);
-  }
-}
-
-// Handle graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('🛑 Shutting down server...');
-  server.close(() => {
-    console.log('✅ Server closed');
-    process.exit(0);
-  });
+// Handle all other routes with Astro SSR
+app.all('*', (req, res) => {
+  ssrHandler(req, res);
 });
 
-process.on('SIGTERM', async () => {
-  console.log('🛑 Shutting down server...');
-  server.close(() => {
-    console.log('✅ Server closed');
-    process.exit(0);
-  });
+app.listen(port, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${port}`);
+  console.log(`📁 Serving static files from: ${path.join(__dirname, 'dist/client')}`);
 });
-
-// Start the server
-startServer();
-
-export default server;
-
-
