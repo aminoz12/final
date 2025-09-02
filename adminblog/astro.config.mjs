@@ -7,7 +7,9 @@ export default defineConfig({
   integrations: [
     tailwind({
       // Ensure Tailwind is properly configured
-      config: { path: './tailwind.config.js' }
+      config: { path: './tailwind.config.js' },
+      // Force CSS processing in production
+      applyBaseStyles: false
     })
   ],
   output: 'server',
@@ -26,6 +28,10 @@ export default defineConfig({
     host: '0.0.0.0'
   },
   vite: {
+    css: {
+      // Ensure CSS is processed
+      devSourcemap: true,
+    },
     server: {
       allowedHosts: [
         'danialblogs-3.onrender.com',
