@@ -20,6 +20,9 @@ export default defineConfig({
     assets: '_astro',
     inlineStylesheets: 'auto'
   },
+  experimental: {
+    assets: true
+  },
   site: 'https://admin.mad2moi.store',
   base: '/',
 
